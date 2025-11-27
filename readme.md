@@ -1,3 +1,6 @@
+# Product-Visibility-Data
+This repo contains analysis of soft drink market data from Alimosho LGA.
+
 # Soft Drink Market Insight Challenge – Analysis & Findings
 
 This document summarizes an exploratory analysis of the Soft Drink Market Insight Challenge data from Alimosho Local Government Area of Lagos, Nigeria. The goal was to clean the raw survey data, derive useful features and visualise patterns in soft‑drink availability, packaging, outlet types and brand presence. Although the dataset captures supply‑side information (what outlets stock and how prominently), careful analysis can still reveal much about consumer demand and market dynamics.
