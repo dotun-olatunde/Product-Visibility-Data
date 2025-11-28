@@ -4,7 +4,7 @@ visualizations.py
 
 This Streamlit app loads the cleaned soft‑drink visibility dataset, derives a
 few additional features to aid exploration, and presents a set of interactive
-charts that help to visualize the data. The aim is to help us uncover patterns in outlet
+charts for visualizing the data. The aim is to uncover patterns in outlet
 types, stock conditions, brand presence, packaging formats and more. Running
 this script with ``streamlit run visualizations.py`` will launch the
 dashboard.
@@ -30,10 +30,10 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# ---------------------------------------------------------------------------
+
 # Configuration
-# ---------------------------------------------------------------------------
 # Path to the cleaned dataset (update this if your file lives elsewhere)
+
 DATA_PATH = "cleaned_product_visibility.csv"
 
 # Columns grouped by logical category. These lists will be used both for
@@ -164,9 +164,9 @@ def scatter_map(df: pd.DataFrame, color_col: str, title: str):
         color_discrete_map=color_map,
         hover_name=color_col,
         zoom=11,
-        title=title,        
+        title=title,
     )
-
+    
     # Adjust layout to control height and legend positioning
     fig.update_layout(
         mapbox_style="carto-positron",
@@ -214,9 +214,9 @@ def main():
     stock_percent = (stock_counts / total_outlets * 100).round(1)
     st.plotly_chart(bar_chart(stock_counts, "Stock Condition Distribution", "Stock Condition", "Number of Outlets"))
     st.markdown(
-        f"About **{stock_percent.get('Partially stocked', 0):.1f}\%** of outlets are partially stocked and **{stock_percent.get('Well stocked', 0):.1f}\%** are well stocked. "
-        f"Only **{stock_percent.get('Almost empty', 0):.1f}\%** are almost empty, **{stock_percent.get('Out of stock', 0):.1f}\%** are out of stock, "
-        f"and the remaining **{stock_percent.get('Not Applicable', 0):.1f}\%** were not applicable."
+        f"About **{stock_percent.get('Partially stocked', 0):.1f}%** of outlets are partially stocked and **{stock_percent.get('Well stocked', 0):.1f}%** are well stocked. "
+        f"Only **{stock_percent.get('Almost empty', 0):.1f}%** are almost empty, **{stock_percent.get('Out of stock', 0):.1f}%** are out of stock, "
+        f"and the remaining **{stock_percent.get('Not Applicable', 0):.1f}%** were not applicable."
     )
 
     # Brand presence counts
@@ -228,7 +228,7 @@ def main():
     top3 = brand_counts.head(3).index.tolist()
     narrative = []
     for brand in top3:
-        narrative.append(f"**{brand.replace('_', ' ')}** ({brand_percent[brand]:.1f}\%)")
+        narrative.append(f"**{brand.replace('_', ' ')}** ({brand_percent[brand]:.1f}%)")
     st.markdown(
         "The market is highly concentrated: " + ", ".join(narrative) + " lead by a wide margin, while other brands trail far behind."
     )
@@ -278,8 +278,8 @@ def main():
     )
     st.plotly_chart(fig_variety_pie)
     st.markdown(
-        f"Single‑brand outlets account for {variety_percent.get('Single', 0):.1f}\% of the market, double‑brand outlets for {variety_percent.get('Double', 0):.1f}\%, "
-        f"and multi‑brand outlets for {variety_percent.get('Multiple', 0):.1f}\%."
+        f"Single‑brand outlets account for {variety_percent.get('Single', 0):.1f}% of the market, double‑brand outlets for {variety_percent.get('Double', 0):.1f}%, "
+        f"and multi‑brand outlets for {variety_percent.get('Multiple', 0):.1f}%."
     )
     # ------------------------------------------------------------------
     # Additional Insights
@@ -304,8 +304,8 @@ def main():
         )
         st.plotly_chart(fig_pack)
         st.markdown(
-            f"PET bottles account for **{package_percent.get('PET_Bottle_(50cl/1L)', 0):.1f}\%** of all packages. "
-            f"Glass bottles represent {package_percent.get('Glass_Bottle_(35cl/60cl)', 0):.1f}\%, and cans make up {package_percent.get('Can_(33cl)', 0):.1f}\%."
+            f"PET bottles account for **{package_percent.get('PET_Bottle_(50cl/1L)', 0):.1f}%** of all packages. "
+            f"Glass bottles represent {package_percent.get('Glass_Bottle_(35cl/60cl)', 0):.1f}%, and cans make up {package_percent.get('Can_(33cl)', 0):.1f}%."
         )
     elif pack_view == "By Outlet Type":
         # Sum packaging types for each outlet type
@@ -385,7 +385,7 @@ def main():
                     )
             st.markdown(
                 "This view focuses on outlets where a brand holds the prime shelf space. "
-                "It shows that even dominant brands rely overwhelmingly on PET bottles.\n\n" + "\n".join(expl_lines)
+                "It shows that even dominant brands rely overwhelmingly on PET bottles.nn" + "n".join(expl_lines)
             )
 
     # Relationship between brand variety and package variety
@@ -485,13 +485,15 @@ def main():
         if presence > 0:
             ratio = dominant / presence * 100
             narrative_lines.append(
-                f"For **{brand.replace('_', ' ')}**, the drink is stocked in {presence} outlets but is dominant in {dominant} of them (about {ratio:.1f}\%)."
+                f"For **{brand.replace('_', ' ')}**, the drink is stocked in {presence} outlets but is dominant in {dominant} of them (about {ratio:.1f}%)."
             )
-    st.markdown(
-        """This chart compares how often each top brand is **present** versus how often it holds the **prime shelf or refrigerator spot**. "
+    # Build explanatory text for presence vs visibility
+    explanation_text = (
+        "This chart compares how often each top brand is **present** versus how often it holds the **prime shelf or refrigerator spot**. "
         "A high dominance percentage suggests retailers prioritise that brand in their displays, whereas a lower percentage indicates "
-        "that the brand is often stocked but rarely given prominence.\n\n" + "\n".join(narrative_lines)
+        "that the brand is often stocked but rarely given prominence.nn"
     )
+    st.markdown(explanation_text + "n".join(narrative_lines))
 
 
     # ------------------------------------------------------------------
@@ -523,8 +525,8 @@ def main():
             )
     st.markdown(
         "This chart compares how different outlet types showcase products. "
-        "Shops and supermarkets rely heavily on shelves and refrigerators, whereas kiosks and hawkers rarely use refrigerators or display stands.\n\n"
-        + "\n".join(disp_narr)
+        "Shops and supermarkets rely heavily on shelves and refrigerators, whereas kiosks and hawkers rarely use refrigerators or display stands.nn"
+        + "n".join(disp_narr)
     )
 
 
@@ -567,7 +569,7 @@ def main():
         )
     else:
         # Density heatmap using Plotly Express. z=None counts each point equally
-        fig_density = px.density_mapbox(
+        fig_density = px.density_map(
             filtered_df,
             lat="Latitude",
             lon="Longitude",
@@ -585,7 +587,7 @@ def main():
             "while lighter areas indicate sparser coverage."
         )
 
-    st.write("\n")
+    st.write("n")
     st.caption("Data source: Soft Drink Market Insight Challenge (Alimosho LGA, Lagos, Nigeria)")
 
 
