@@ -4,7 +4,7 @@ visualizations.py
 
 This Streamlit app loads the cleaned soft‑drink visibility dataset, derives a
 few additional features to aid exploration, and presents a set of interactive
-charts that help to visualize the data. The aim is to help you uncover patterns in outlet
+charts that help to visualize the data. The aim is to help us uncover patterns in outlet
 types, stock conditions, brand presence, packaging formats and more. Running
 this script with ``streamlit run visualizations.py`` will launch the
 dashboard.
@@ -146,8 +146,13 @@ def stacked_bar(df: pd.DataFrame, index_col: str, cat_col: str, title: str):
 
 
 def scatter_map(df: pd.DataFrame, color_col: str, title: str):
-    """Return a scatter mapbox chart showing outlet locations colored by a category."""
-    # Create a color discrete map for consistency across categories
+    """Return a scatter map chart showing outlet locations colored by a category.
+
+    This helper uses Plotly Express' ``scatter_map`` function, which avoids the
+    deprecated ``scatter_mapbox`` API. It still leverages Mapbox for rendering
+    but does so via the updated interface.
+    """
+    # Create a consistent colour palette for categories
     unique_vals = df[color_col].unique()
     colors = px.colors.qualitative.Set2
     color_map = {val: colors[i % len(colors)] for i, val in enumerate(unique_vals)}
@@ -161,7 +166,8 @@ def scatter_map(df: pd.DataFrame, color_col: str, title: str):
         zoom=11,
         title=title,
     )
-    # Set map style and layout properties separately to avoid deprecated parameters
+
+    # Adjust layout to control height and legend positioning
     fig.update_layout(
         mapbox_style="carto-positron",
         height=500,
@@ -264,6 +270,77 @@ def main():
     )
     st.markdown(
         "This chart categorises outlets as **Single**, **Double**, or **Multiple** based on how many brands they stock. You can see that multi‑brand outlets are the most common."
+    )
+
+    # ------------------------------------------------------------------
+    # Additional Insights
+    # ------------------------------------------------------------------
+
+    # Packaging formats by brand
+    st.subheader("Packaging Formats by Top Brands")
+    # Recompute brand counts on the filtered data to rank brands
+    brand_counts_local = filtered_df[PRODUCT_COLS].sum().sort_values(ascending=False)
+    top_brands = brand_counts_local.head(5).index  # focus on the five most common brands
+    # Build a DataFrame of packaging counts for each top brand
+    packaging_by_brand = {}
+    for brand in top_brands:
+        # Sum packaging indicators only for rows where this brand is present
+        packaging_by_brand[brand] = filtered_df.loc[filtered_df[brand] == 1, PACKAGE_COLS].sum()
+    packaging_df = pd.DataFrame(packaging_by_brand).T
+    fig_pack_brand = px.bar(
+        packaging_df,
+        x=packaging_df.index,
+        y=packaging_df.columns,
+        barmode="group",
+        labels={"value": "Number of Outlets", "x": "Brand", "variable": "Packaging Type"},
+        title="Packaging Formats by Top Brands",
+    )
+    fig_pack_brand.update_layout(xaxis_title="Brand", yaxis_title="Number of Outlets")
+    st.plotly_chart(fig_pack_brand)
+    st.markdown(
+        "This chart illustrates how the leading brands distribute their products across **PET bottles**, **glass bottles** and **cans**. "
+        "Most brands rely heavily on PET bottles, while glass and cans appear in niche quantities."
+    )
+
+    # Relationship between brand variety and package variety
+    st.subheader("Brand Variety vs Packaging Variety")
+    avg_pkg_per_brand_variety = (
+        filtered_df.groupby("brand_variety")["num_package_types"].mean().reindex(["Single", "Double", "Multiple"])
+    )
+    fig_variety_pkg = px.bar(
+        x=avg_pkg_per_brand_variety.index,
+        y=avg_pkg_per_brand_variety.values,
+        labels={"x": "Brand Variety", "y": "Avg. Package Types"},
+        title="Average Number of Package Types by Brand Variety",
+    )
+    fig_variety_pkg.update_layout(xaxis_title="Brand Variety", yaxis_title="Average Package Types")
+    st.plotly_chart(fig_variety_pkg)
+    st.markdown(
+        "Outlets that stock **multiple** brands also tend to offer more packaging formats, whereas single‑brand outlets typically sell only one or two."  
+        "This suggests that variety at the brand level often goes hand‑in‑hand with variety in packaging."
+    )
+
+    # Brand co‑occurrence heatmap (market basket perspective)
+    st.subheader("Brand Co‑occurrence Matrix")
+    co_occ = filtered_df[PRODUCT_COLS].T.dot(filtered_df[PRODUCT_COLS])
+    # Zero out the diagonal to focus on co‑occurrences only
+    for b in co_occ.columns:
+        co_occ.loc[b, b] = 0
+    fig_coocc = px.imshow(
+        co_occ,
+        labels=dict(x="Brand", y="Brand", color="Co‑occurrence Count"),
+        x=co_occ.columns,
+        y=co_occ.index,
+        title="Co‑occurrence of Brands Across Outlets",
+        color_continuous_scale="Blues",
+        text_auto=True,
+    )
+    # Improve layout for readability
+    fig_coocc.update_layout(xaxis_title="Brand", yaxis_title="Brand")
+    st.plotly_chart(fig_coocc)
+    st.markdown(
+        "This heatmap shows how often each pair of brands appears together in the same outlet. "
+        "Darker shades indicate more common pairings, highlighting which drinks are frequently stocked together and may reflect complementary demand."
     )
 
     # Top 10 product combinations
