@@ -164,7 +164,7 @@ def scatter_map(df: pd.DataFrame, color_col: str, title: str):
         color_discrete_map=color_map,
         hover_name=color_col,
         zoom=11,
-        title=title,
+        title=title,        
     )
 
     # Adjust layout to control height and legend positioning
@@ -209,25 +209,28 @@ def main():
     # Stock condition distribution
     st.subheader("Stock Condition Distribution")
     stock_counts = filtered_df["Stock_Condition"].value_counts().sort_values(ascending=False)
+    # Compute percentages for narrative
+    total_outlets = len(filtered_df)
+    stock_percent = (stock_counts / total_outlets * 100).round(1)
     st.plotly_chart(bar_chart(stock_counts, "Stock Condition Distribution", "Stock Condition", "Number of Outlets"))
     st.markdown(
-        "Most outlets are **partially stocked** or **well stocked**, with only a small number either **almost empty** or **out of stock**."
+        f"About **{stock_percent.get('Partially stocked', 0):.1f}\%** of outlets are partially stocked and **{stock_percent.get('Well stocked', 0):.1f}\%** are well stocked. "
+        f"Only **{stock_percent.get('Almost empty', 0):.1f}\%** are almost empty, **{stock_percent.get('Out of stock', 0):.1f}\%** are out of stock, "
+        f"and the remaining **{stock_percent.get('Not Applicable', 0):.1f}\%** were not applicable."
     )
 
     # Brand presence counts
     st.subheader("Brand Presence Across Outlets")
     brand_counts = filtered_df[PRODUCT_COLS].sum().sort_values(ascending=False)
+    brand_percent = (brand_counts / total_outlets * 100).round(1)
     st.plotly_chart(bar_chart(brand_counts, "Brand Presence Across Outlets", "Brand", "Number of Outlets"))
+    # Compose a short narrative for the top three brands
+    top3 = brand_counts.head(3).index.tolist()
+    narrative = []
+    for brand in top3:
+        narrative.append(f"**{brand.replace('_', ' ')}** ({brand_percent[brand]:.1f}\%)")
     st.markdown(
-        "Coca‑Cola, Pepsi, and Fanta dominate the market, while other brands appear in far fewer outlets."
-    )
-
-    # Packaging distribution
-    st.subheader("Packaging Type Distribution")
-    package_counts = filtered_df[PACKAGE_COLS].sum().sort_values(ascending=False)
-    st.plotly_chart(bar_chart(package_counts, "Packaging Type Distribution", "Packaging", "Number of Outlets"))
-    st.markdown(
-        "Most drinks are sold in **PET bottles**. Glass bottles and cans are much less common."
+        "The market is highly concentrated: " + ", ".join(narrative) + " lead by a wide margin, while other brands trail far behind."
     )
 
     # Crosstab of outlet type vs stock condition
@@ -265,42 +268,125 @@ def main():
     # Brand variety distribution (Single, Double, Multiple)
     st.subheader("Brand Variety Categories")
     variety_counts = filtered_df["brand_variety"].value_counts().sort_index()
-    st.plotly_chart(
-        bar_chart(variety_counts, "Brand Variety Distribution", "Variety Category", "Number of Outlets")
+    variety_percent = (variety_counts / total_outlets * 100).round(1)
+    # Use a pie chart to emphasise proportions of single, double and multiple brand outlets
+    fig_variety_pie = px.pie(
+        names=variety_counts.index,
+        values=variety_counts.values,
+        title="Brand Variety Categories",
+        labels={"names": "Variety Category", "values": "Number of Outlets"},
     )
+    st.plotly_chart(fig_variety_pie)
     st.markdown(
-        "This chart categorises outlets as **Single**, **Double**, or **Multiple** based on how many brands they stock. You can see that multi‑brand outlets are the most common."
+        f"Single‑brand outlets account for {variety_percent.get('Single', 0):.1f}\% of the market, double‑brand outlets for {variety_percent.get('Double', 0):.1f}\%, "
+        f"and multi‑brand outlets for {variety_percent.get('Multiple', 0):.1f}\%."
     )
-
     # ------------------------------------------------------------------
     # Additional Insights
     # ------------------------------------------------------------------
 
-    # Packaging formats by brand
-    st.subheader("Packaging Formats by Top Brands")
-    # Recompute brand counts on the filtered data to rank brands
-    brand_counts_local = filtered_df[PRODUCT_COLS].sum().sort_values(ascending=False)
-    top_brands = brand_counts_local.head(5).index  # focus on the five most common brands
-    # Build a DataFrame of packaging counts for each top brand
-    packaging_by_brand = {}
-    for brand in top_brands:
-        # Sum packaging indicators only for rows where this brand is present
-        packaging_by_brand[brand] = filtered_df.loc[filtered_df[brand] == 1, PACKAGE_COLS].sum()
-    packaging_df = pd.DataFrame(packaging_by_brand).T
-    fig_pack_brand = px.bar(
-        packaging_df,
-        x=packaging_df.index,
-        y=packaging_df.columns,
-        barmode="group",
-        labels={"value": "Number of Outlets", "x": "Brand", "variable": "Packaging Type"},
-        title="Packaging Formats by Top Brands",
+    # Packaging analysis with interactive view selector
+    st.subheader("Packaging Analysis")
+    pack_view = st.selectbox(
+        "Select packaging view",
+        ["Overall Distribution", "By Outlet Type", "By Top Brands", "By Dominant Brands"],
+        index=0,
+        help="Explore packaging formats across different perspectives"
     )
-    fig_pack_brand.update_layout(xaxis_title="Brand", yaxis_title="Number of Outlets")
-    st.plotly_chart(fig_pack_brand)
-    st.markdown(
-        "This chart illustrates how the leading brands distribute their products across **PET bottles**, **glass bottles** and **cans**. "
-        "Most brands rely heavily on PET bottles, while glass and cans appear in niche quantities."
-    )
+    if pack_view == "Overall Distribution":
+        package_counts = filtered_df[PACKAGE_COLS].sum().sort_values(ascending=False)
+        package_percent = (package_counts / total_outlets * 100).round(1)
+        fig_pack = px.pie(
+            names=package_counts.index,
+            values=package_counts.values,
+            title="Packaging Type Distribution",
+            labels={"names": "Packaging Type", "values": "Number of Outlets"},
+        )
+        st.plotly_chart(fig_pack)
+        st.markdown(
+            f"PET bottles account for **{package_percent.get('PET_Bottle_(50cl/1L)', 0):.1f}\%** of all packages. "
+            f"Glass bottles represent {package_percent.get('Glass_Bottle_(35cl/60cl)', 0):.1f}\%, and cans make up {package_percent.get('Can_(33cl)', 0):.1f}\%."
+        )
+    elif pack_view == "By Outlet Type":
+        # Sum packaging types for each outlet type
+        pack_outlet = filtered_df.groupby("Type_Of_Outlet")[PACKAGE_COLS].sum()
+        fig_pack_outlet = px.bar(
+            pack_outlet,
+            x=pack_outlet.index,
+            y=pack_outlet.columns,
+            barmode="stack",
+            labels={"value": "Number of Outlets", "index": "Outlet Type", "variable": "Packaging Type"},
+            title="Packaging Formats by Outlet Type",
+        )
+        st.plotly_chart(fig_pack_outlet)
+        st.markdown(
+            "This view compares packaging mixes across outlet types. Shops dominate PET usage, while kiosks and hawkers show smaller counts across all formats."
+        )
+    elif pack_view == "By Top Brands":
+        # Recompute brand counts on the filtered data to rank brands
+        brand_counts_local = filtered_df[PRODUCT_COLS].sum().sort_values(ascending=False)
+        top_brands = brand_counts_local.head(5).index
+        packaging_by_brand = {}
+        for brand in top_brands:
+            packaging_by_brand[brand] = filtered_df.loc[filtered_df[brand] == 1, PACKAGE_COLS].sum()
+        packaging_df = pd.DataFrame(packaging_by_brand).T
+        fig_pack_brand = px.bar(
+            packaging_df,
+            x=packaging_df.index,
+            y=packaging_df.columns,
+            barmode="group",
+            labels={"value": "Number of Outlets", "x": "Brand", "variable": "Packaging Type"},
+            title="Packaging Formats by Top Brands",
+        )
+        st.plotly_chart(fig_pack_brand)
+        st.markdown(
+            "Leading brands rely heavily on PET bottles. Glass and cans appear only in niche quantities across the top sellers."
+        )
+    else:  # By Dominant Brands
+        # Use dominant brand mapping defined earlier
+        dom_counts = filtered_df.get("dominant_brand", pd.Series(dtype=str)).value_counts()
+        # Filter to known product names
+        dominance_map_local = {
+            "Coke": "Coca_Cola", "Coca Cola": "Coca_Cola", "Coca-Cola": "Coca_Cola",
+            "Pepsi": "Pepsi", "Bigi": "Bigi", "Rc Cola": "RC_Cola", "Rc": "RC_Cola", "7Up": "7Up",
+            "Fanta": "Fanta", "Sprite": "Sprite", "La Casera": "La_Casera", "Schweppes": "Schweppes",
+            "Fayrouz": "Fayrouz", "Mirinda": "Mirinda", "Mountain Dew": "Mountain_Dew", "Teem": "Teem",
+            "American Cola": "American_Cola", "Others": "Product_Others",
+        }
+        valid_dom = [b for b in dom_counts.index if b in dominance_map_local]
+        top_dom_brands = pd.Index(valid_dom)[:3]
+        if len(top_dom_brands) > 0:
+            pack_by_dom = {}
+            for dom in top_dom_brands:
+                prod_col = dominance_map_local[dom]
+                mask = (filtered_df.get("dominant_brand") == dom) & (filtered_df[prod_col] == 1)
+                pack_by_dom[dom] = filtered_df.loc[mask, PACKAGE_COLS].sum()
+            pack_dom_df = pd.DataFrame(pack_by_dom).T
+            fig_pack_dom = px.bar(
+                pack_dom_df,
+                x=pack_dom_df.index,
+                y=pack_dom_df.columns,
+                barmode="group",
+                labels={"value": "Number of Outlets", "x": "Dominant Brand", "variable": "Packaging Type"},
+                title="Packaging Formats for Top Dominant Brands",
+            )
+            st.plotly_chart(fig_pack_dom)
+            # Build narrative
+            expl_lines = []
+            for dom in top_dom_brands:
+                total = pack_dom_df.loc[dom].sum()
+                if total > 0:
+                    perc_pet = pack_dom_df.loc[dom, "PET_Bottle_(50cl/1L)"] / total * 100 if "PET_Bottle_(50cl/1L)" in pack_dom_df.columns else 0
+                    perc_glass = pack_dom_df.loc[dom, "Glass_Bottle_(35cl/60cl)"] / total * 100 if "Glass_Bottle_(35cl/60cl)" in pack_dom_df.columns else 0
+                    perc_can = pack_dom_df.loc[dom, "Can_(33cl)" ] / total * 100 if "Can_(33cl)" in pack_dom_df.columns else 0
+                    expl_lines.append(
+                        f"When **{dom}** is the dominant brand, it is sold mostly in PET bottles (about {perc_pet:.1f}%); "
+                        f"glass bottles ({perc_glass:.1f}%) and cans ({perc_can:.1f}%) play minor roles."
+                    )
+            st.markdown(
+                "This view focuses on outlets where a brand holds the prime shelf space. "
+                "It shows that even dominant brands rely overwhelmingly on PET bottles.\n\n" + "\n".join(expl_lines)
+            )
 
     # Relationship between brand variety and package variety
     st.subheader("Brand Variety vs Packaging Variety")
@@ -316,11 +402,9 @@ def main():
     fig_variety_pkg.update_layout(xaxis_title="Brand Variety", yaxis_title="Average Package Types")
     st.plotly_chart(fig_variety_pkg)
     st.markdown(
-        "Outlets that stock **multiple** brands also tend to offer more packaging formats, whereas single‑brand outlets typically sell only one or two."  
+        "Outlets that stock **multiple** brands also tend to offer more packaging formats, whereas single‑brand outlets typically sell only one or two. "
         "This suggests that variety at the brand level often goes hand‑in‑hand with variety in packaging."
     )
-
-    # Brand co‑occurrence heatmap (market basket perspective)
     st.subheader("Brand Co‑occurrence Matrix")
     co_occ = filtered_df[PRODUCT_COLS].T.dot(filtered_df[PRODUCT_COLS])
     # Zero out the diagonal to focus on co‑occurrences only
@@ -343,6 +427,107 @@ def main():
         "Darker shades indicate more common pairings, highlighting which drinks are frequently stocked together and may reflect complementary demand."
     )
 
+    # ------------------------------------------------------------------
+    # Brand presence vs visibility
+    # ------------------------------------------------------------------
+    st.subheader("Brand Presence vs Visibility")
+    # Compute presence counts for each product (number of outlets stocking the brand)
+    presence_counts = filtered_df[PRODUCT_COLS].sum().sort_values(ascending=False)
+    # Map values in the dominant_brand column to product column names where possible
+    dominance_map = {
+        "Coke": "Coca_Cola",
+        "Coca Cola": "Coca_Cola",
+        "Coca-Cola": "Coca_Cola",
+        "Pepsi": "Pepsi",
+        "Bigi": "Bigi",
+        "Rc Cola": "RC_Cola",
+        "Rc": "RC_Cola",
+        "7Up": "7Up",
+        "Fanta": "Fanta",
+        "Sprite": "Sprite",
+        "La Casera": "La_Casera",
+        "Schweppes": "Schweppes",
+        "Fayrouz": "Fayrouz",
+        "Mirinda": "Mirinda",
+        "Mountain Dew": "Mountain_Dew",
+        "Teem": "Teem",
+        "American Cola": "American_Cola",
+        "Others": "Product_Others",
+    }
+    # Count how many times each product is the dominant brand
+    dominance_counts = pd.Series(0, index=presence_counts.index)
+    # Only compute if the dominant_brand column exists
+    if "dominant_brand" in filtered_df.columns:
+        for val, count in filtered_df["dominant_brand"].value_counts().items():
+            mapped = dominance_map.get(val, None)
+            if mapped in dominance_counts.index:
+                dominance_counts[mapped] += count
+    # Combine presence and dominance into one DataFrame for plotting (top 5 brands)
+    top_avail = presence_counts.head(5)
+    avail_vis_df = pd.DataFrame({
+        "Presence": top_avail,
+        "Dominant": dominance_counts[top_avail.index],
+    })
+    fig_avail_vis = px.bar(
+        avail_vis_df,
+        x=avail_vis_df.index,
+        y=["Presence", "Dominant"],
+        barmode="group",
+        labels={"value": "Number of Outlets", "x": "Brand", "variable": "Metric"},
+        title="Brand Presence vs Visibility for Top Brands",
+    )
+    st.plotly_chart(fig_avail_vis)
+    # Provide narrative with ratios
+    narrative_lines = []
+    for brand in avail_vis_df.index:
+        presence = avail_vis_df.loc[brand, "Presence"]
+        dominant = avail_vis_df.loc[brand, "Dominant"]
+        if presence > 0:
+            ratio = dominant / presence * 100
+            narrative_lines.append(
+                f"For **{brand.replace('_', ' ')}**, the drink is stocked in {presence} outlets but is dominant in {dominant} of them (about {ratio:.1f}\%)."
+            )
+    st.markdown(
+        """This chart compares how often each top brand is **present** versus how often it holds the **prime shelf or refrigerator spot**. "
+        "A high dominance percentage suggests retailers prioritise that brand in their displays, whereas a lower percentage indicates "
+        "that the brand is often stocked but rarely given prominence.\n\n" + "\n".join(narrative_lines)
+    )
+
+
+    # ------------------------------------------------------------------
+    # Display methods by outlet type
+    # ------------------------------------------------------------------
+    st.subheader("Display Methods by Outlet Type")
+    # Sum each display method across outlets grouped by type
+    display_by_outlet = filtered_df.groupby("Type_Of_Outlet")[DISPLAY_COLS].sum()
+    fig_display_outlet = px.bar(
+        display_by_outlet,
+        x=display_by_outlet.index,
+        y=display_by_outlet.columns,
+        barmode="stack",
+        title="Display Methods by Outlet Type",
+        labels={"value": "Number of Outlets", "index": "Outlet Type", "variable": "Display Method"},
+    )
+    st.plotly_chart(fig_display_outlet)
+    # Build narrative highlighting differences in display methods across outlet types
+    disp_narr = []
+    for outlet in display_by_outlet.index:
+        total_disp = display_by_outlet.loc[outlet].sum()
+        if total_disp > 0:
+            perc_shelf = display_by_outlet.loc[outlet, "On_Shelf/Carton"] / total_disp * 100 if "On_Shelf/Carton" in display_by_outlet.columns else 0
+            perc_refrig = display_by_outlet.loc[outlet, "In_Refrigerator/Cooler"] / total_disp * 100 if "In_Refrigerator/Cooler" in display_by_outlet.columns else 0
+            perc_stand = display_by_outlet.loc[outlet, "On_Display_Stand"] / total_disp * 100 if "On_Display_Stand" in display_by_outlet.columns else 0
+            disp_narr.append(
+                f"**{outlet}** outlets use shelves/cartons for about {perc_shelf:.1f}% of displays, refrigerators/coolers for {perc_refrig:.1f}%, "
+                f"and display stands for {perc_stand:.1f}%."
+            )
+    st.markdown(
+        "This chart compares how different outlet types showcase products. "
+        "Shops and supermarkets rely heavily on shelves and refrigerators, whereas kiosks and hawkers rarely use refrigerators or display stands.\n\n"
+        + "\n".join(disp_narr)
+    )
+
+
     # Top 10 product combinations
     st.subheader("Top Product Combinations")
     combo_counts = (
@@ -363,17 +548,42 @@ def main():
     st.markdown(
         "The most common product assortments include single Coca‑Cola, Coca‑Cola with Fanta, and Pepsi with American Cola, among others."
     )
-    # Location scatter map
+    # Location map with density option
     st.subheader("Outlet Locations")
     map_color_option = st.selectbox(
         "Color outlets by", ["Stock_Condition", "Type_Of_Outlet"]
     )
-    st.plotly_chart(
-        scatter_map(filtered_df, color_col=map_color_option, title=f"Outlet Locations Colored by {map_color_option}")
+    map_view_option = st.radio(
+        "Map view", ["Scatter", "Density"], horizontal=True,
+        help="Choose a scatter map of individual outlets or a density heatmap of outlet concentration."
     )
-    st.markdown(
-        "This map shows where each outlet is located. You can colour the points by **Stock Condition** or **Type of Outlet** using the drop‑down above."
-    )
+    if map_view_option == "Scatter":
+        fig_map = scatter_map(
+            filtered_df, color_col=map_color_option, title=f"Outlet Locations Colored by {map_color_option}"
+        )
+        st.plotly_chart(fig_map)
+        st.markdown(
+            "This map shows the location of every outlet. Use the drop‑down to colour points by **Stock Condition** or **Type of Outlet**."
+        )
+    else:
+        # Density heatmap using Plotly Express. z=None counts each point equally
+        fig_density = px.density_mapbox(
+            filtered_df,
+            lat="Latitude",
+            lon="Longitude",
+            z=None,
+            radius=15,
+            center={"lat": filtered_df["Latitude"].mean(), "lon": filtered_df["Longitude"].mean()},
+            zoom=11,
+            mapbox_style="carto-positron",
+            title="Outlet Density Heatmap",
+        )
+        fig_density.update_layout(height=500)
+        st.plotly_chart(fig_density)
+        st.markdown(
+            "This density heatmap highlights areas with a high concentration of outlets. Darker spots correspond to clusters of retailers, "
+            "while lighter areas indicate sparser coverage."
+        )
 
     st.write("\n")
     st.caption("Data source: Soft Drink Market Insight Challenge (Alimosho LGA, Lagos, Nigeria)")
