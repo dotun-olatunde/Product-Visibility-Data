@@ -344,6 +344,51 @@ frame.set_index('S/N', inplace=True)"""
 #print("Sample index values:", frame.index[:5])
 
 
+#Check for outliers
+def detect_outliers(frame, z_threshold=3.0):
+
+    """
+    Detect outliers in all numeric columns of a DataFrame using the z-score method.
+    
+    Parameters:
+        frame (pd.DataFrame): DataFrame to check.
+        z_threshold (float): Absolute z-score above which a value is considered an outlier.
+    
+    Returns:
+        dict: A dictionary mapping column names to a list of outlier indices. Empty if none found.
+    """
+
+    outlier_indices = {}
+    
+    # Identify numeric columns (integers and floats)
+    numeric_cols = frame.select_dtypes(include=["number"]).columns
+    
+    # Exclude binary columns (0/1) by checking unique values
+    numeric_cols = [col for col in numeric_cols if set(frame[col].dropna().unique()) != {0, 1}]
+    
+    for col in numeric_cols:
+        series = pd.to_numeric(frame[col], errors='coerce')
+        mean = series.mean()
+        std = series.std()
+        if std == 0:
+            continue  # skip constant columns
+        z_scores = (series - mean) / std
+        outliers = series.index[abs(z_scores) > z_threshold].tolist()
+        if outliers:
+            outlier_indices[col] = outliers
+    
+    return outlier_indices
+
+# Detect outliers (including Latitude and Longitude)
+outlier_dict = detect_outliers(frame)
+
+if outlier_dict:
+    for column, indices in outlier_dict.items():
+        print(f"Outliers in {column}: rows {indices}")
+else:
+    print("No outliers found in numeric columns.")
+
+
 #Final Checks 
 print("Final data set shape:", frame.shape)
 #print(frame.info())
@@ -356,5 +401,5 @@ print("Cleaned data set saved as: cleaned_product_visibility.csv")
 
 
 #This is the end of the data cleaning workflow
-#Now we will perform some visualizations using matplotlib and django for interactivity
+#Now we will perform some visualizations using streamlit, plotly and pandasfor interactivity
 #You can find the scripts in the current directory under the name "visualizations.py"

@@ -1,6 +1,23 @@
 # Soft Drink Market Insight Challenge – Analysis & Findings
 
+## Introduction
+I am Dotun Olatunde and in this project, I'll be analyzing and drawing insights from Alimosho's soft drink market as part of my contributions to the *#NervsDataChallenge.*
+
+## Project Overview
 This document summarizes an exploratory analysis of the Soft Drink Market Insight Challenge data from Alimosho Local Government Area of Lagos, Nigeria. The goal was to clean the raw survey data, derive useful features and visualise patterns in soft‑drink availability, packaging, outlet types and brand presence. Although the dataset captures supply‑side information (what outlets stock and how prominently), careful analysis can still reveal much about consumer demand and market dynamics.
+
+## Tools and Data
+Data for this project was gotten from the following repo: **github.com/getnervs/Soft-Drink-Market-Insight-Challenge** and it was cleaned and analyzed with the **Python** programming language.
+The following *Python packages* were used for analysis and visualizations:
+
+- Matplotlib
+- PANDAS,
+- Plotly,
+- Regex
+- Streamlit
+
+To install these packages, please use the command **pip install (package e.g. streamlit)** on your command-line interface.
+
 
 ## Data Cleaning & Feature Engineering
 
@@ -11,6 +28,7 @@ The original CSV contained grouping rows, inconsistent column names and several 
 - Splitting the three ambiguous “Others” columns into Product_Others, Display_Others and Package_Others.
 - Dropping columns with more than 80 % missing values and those with only a single non‑zero value.
 - Converting binary indicator columns to numeric (0/1) and fixing their types.
+- Standardizing numeric columns and ensuring that data contained no outliers
 - Creating several derived features to support analysis:
   - num_brands_present – number of different brands stocked at each outlet.
   - num_package_types – number of distinct package formats (PET, glass, can).
@@ -84,4 +102,9 @@ Although the survey doesn’t track individual purchases, it does reveal several
 
 This analysis shows a soft‑drink market dominated by a handful of brands and packaging formats, with retailers largely able to keep products on the shelf. Shops carry the broadest assortments and maintain the healthiest inventories, while smaller formats like kiosks and hawkers exhibit more variability in stock levels. By combining thoughtful data cleaning, feature engineering and visual storytelling, we can infer consumer preferences and market dynamics even from outlet‑level data.
 
-Feel free to explore the interactive dashboard (via the Streamlit app in this repository) for a deeper dive into the data and to experiment with different filters.
+You can find static snapshots of my dashboard in the folder named **plot** in this repo.
+Feel free to also explore the interactive dashboards by clicking **[here](https://my-visualizations.streamlit.app)** or via the Streamlit app in this repository for a deeper dive into the data and to experiment with different filters.
+
+
+## Got questions or feedback ?
+I would really love to hear from you. please click *[here](https://wa.me/+2348027834543)* to chat with me on WhatsApp or send me an email via **olatundedotun6@gmail.com.**
