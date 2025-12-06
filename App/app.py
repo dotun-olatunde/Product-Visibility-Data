@@ -687,6 +687,11 @@ def consumer_dashboard(user: User, session: Session) -> None:
         st.markdown(
             f"**Available brands:** {top['brands']}"
         )
+
+        brands_in_outlet = [b.strip() for b in top["brands"].split(",") if b.strip()]
+        # Count how many distinct brands this outlet stocks.  This will feed into
+        # the stock condition and brand presence models later.
+        num_brands = len(brands_in_outlet)
         # Provide a button to patronize this outlet.  Clicking this logs an interaction
         if st.button("Patronize this outlet", key=f"patronize_{top['outlet_id']}"):
             # Record the patronization in the UserInteraction table (simple stub)
@@ -740,10 +745,6 @@ def consumer_dashboard(user: User, session: Session) -> None:
             "*Ordering and messaging features are coming soon! You'll be able to place orders and chat directly with this outlet.*"
         )
         # Recommend alternatives if favourite not available
-        brands_in_outlet = [b.strip() for b in top["brands"].split(",") if b.strip()]
-        # Count how many distinct brands this outlet stocks.  This will feed into
-        # the stock condition and brand presence models.
-        num_brands = len(brands_in_outlet)
         if user.favourite_drink not in brands_in_outlet:
             st.markdown(
                 f"Sorry, **{user.favourite_drink}** is not stocked here. "
