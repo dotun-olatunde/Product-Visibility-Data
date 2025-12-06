@@ -34,7 +34,7 @@ import plotly.express as px
 # Configuration
 # Path to the cleaned dataset (update this if your file lives elsewhere)
 
-DATA_PATH = "../Files/cleaned_product_visibility.csv"
+DATA_PATH = "Files/cleaned_product_visibility.csv"
 
 # Columns grouped by logical category. These lists will be used both for
 # derived feature calculations and for building plots.

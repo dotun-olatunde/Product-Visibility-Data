@@ -7,8 +7,8 @@ I am Dotun Olatunde and in this project, I'll be analyzing and drawing insights 
 This document summarizes an exploratory analysis of the Soft Drink Market Insight Challenge data from Alimosho Local Government Area of Lagos, Nigeria. The goal was to clean the raw survey data, derive useful features and visualise patterns in soft‑drink availability, packaging, outlet types and brand presence. Although the dataset captures supply‑side information (what outlets stock and how prominently), careful analysis can still reveal much about consumer demand and market dynamics.
 
 ## Tools and Data
-Data for this project was gotten from the following repo: **github.com/getnervs/Soft-Drink-Market-Insight-Challenge** and it was cleaned and analyzed with the **Python** programming language.
-The following *Python packages* were used for analysis and visualizations:
+Data for this project was gotten from the following repo: **github.com/getnervs/Soft-Drink-Market-Insight-Challenge** and it was [cleaned](Files/cleaned_product_visibility.csv) and analyzed with the **Python** programming language.
+The following *[Python](https://python.org) packages* were used for analysis and visualizations:
 
 - Matplotlib
 - PANDAS,
@@ -21,7 +21,7 @@ To install these packages, please use the command **pip install (package e.g. st
 
 ## Data Cleaning & Feature Engineering
 
-The original CSV contained grouping rows, inconsistent column names and several nearly empty fields. Cleaning steps included:
+The [original CSV](Files/product_visibility_challenge_data.csv) contained grouping rows, inconsistent column names and several nearly empty fields. Cleaning steps included:
 
 - Skipping the first grouping row when loading the file (header=1).
 - Stripping and standardising column names: converting spaces to underscores, fixing misspellings (refridgerator → refrigerator) and retaining meaningful punctuation.
