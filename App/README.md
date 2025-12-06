@@ -44,6 +44,8 @@ streamlit run app.py
 
 4. Navigate to the URL provided by Streamlit (usually <http://localhost:8501>) to interact with the app.
 
+**Or click *[here](https://soda-spot.streamlit.app)* to have a feel of the app if you don't want to go through the hassle of installing dependencies and running scripts on your machine.**
+
 ## Limitations
 
 This MVP focuses on demonstrating the data pipeline and basic user flows.  Many features are intentionally left as placeholders, including ordering drinks, messaging outlet owners, hawker tracking, real‑time location services and personalised recommendations that adapt over time.  The database schema can be extended to support profile pictures and contact information; see the comments in the code for guidance.

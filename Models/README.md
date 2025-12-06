@@ -29,6 +29,6 @@ To retrain the models or tune hyperparameters, edit `train_models.py` and run it
 
 ## Usage
 
-In the Streamlit application (`app/app.py`), models are lazily loaded via helper functions.  For example, `load_stock_condition_model()` loads `stock_condition_model.pkl` once and caches it, while `load_brand_presence_models()` loads all brand presence models into a dictionary.  Predictions are made by constructing a small feature vector (outlet type and counts) and calling `.predict()` or `.predict_proba()` on the loaded models.
+In the Streamlit application (`App/app.py`), models are lazily loaded via helper functions.  For example, `load_stock_condition_model()` loads `stock_condition_model.pkl` once and caches it, while `load_brand_presence_models()` loads all brand presence models into a dictionary.  Predictions are made by constructing a small feature vector (outlet type and counts) and calling `.predict()` or `.predict_proba()` on the loaded models.
 
 If you add new models (e.g. packaging or footfall models), make sure to update the helper functions and the app logic accordingly.
